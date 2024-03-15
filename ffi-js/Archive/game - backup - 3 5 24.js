@@ -2,10 +2,6 @@
 
 */
 
-/* SOUND
-*/
-var battleMusic = new Audio("assets/audio/battle_scene.mp3");
-
 /* PAWN
 The class used for both Heroes and Enemies
 */
@@ -176,11 +172,11 @@ class Enemy extends Pawn {
     die() {
         console.log(this.name, "died!");
         setTimeout(function() {
-            gameUi.notification("terminated", "Terminated", 1500);
+            gameUi.notification("terminated", "Terminated", 2000);
             var enemyIndex = enemies.indexOf(this.name);
             enemies.splice(enemyIndex,1);
             gameUi.refreshEnemyList();
-        }, 2500);
+        }, 3500);
     }
 }
 
@@ -212,9 +208,6 @@ enemies.push(enemyOne, enemyTwo, enemyThree, enemyFour);
 /* GAME UI
 */
 var gameUi = {
-    uiEnemyTargets : document.getElementById("enemy-targets"),
-    uiPlayerOptions : document.getElementById("player-options"),
-
     notification : function(type, message, timeout) {
         // Notification types: pawn, hits, target, damage, terminated
         var messageText = document.createElement("div");
@@ -268,11 +261,12 @@ var gameUi = {
             heroContainer.classList.add("ui-window");
             heroContainer.classList.add("hero-name");
 
+
+
             var heroName = document.createElement("div");
             heroName.innerText = hero.name;
 
             var heroHp = document.createElement("p");
-            heroHp.setAttribute("id", "hero-hp-" + i);
             heroHp.innerText = "HP " + hero.hp;
 
             document.getElementById("hero-container-" + i).appendChild(heroName);
@@ -308,7 +302,7 @@ var gameUi = {
                     document.getElementById("hero-display").appendChild(heroSprite);
                     break;
                 default :
-                    console.log("Error: There is no hero of that type.");
+                    console.log("hello");
             }
             i++;
         }
@@ -338,20 +332,6 @@ var gameUi = {
                     console.log("hello");
             }
         }
-    },
-    refreshHeroStats : function() {
-        var i = 0;
-        for (hero of heroes) {
-            var heroHp = document.getElementById("hero-hp-" + i);
-            heroHp.innerText = "HP " + hero.hp;
-            i++;
-        }
-    },
-    hideUi : function(uiElement) {
-        uiElement.style.display = "none";
-    },
-    showUi : function(uiElement) {
-        uiElement.style.display = "block";
     }
 }
 
@@ -425,14 +405,10 @@ var game = {
     loop : function(state, turn) {
         if (state == "active") {
             if (turn == "player" && this.playerCommandsChosen == false) {
-                gameUi.showUi(gameUi.uiEnemyTargets);
-                gameUi.showUi(gameUi.uiPlayerOptions);
                 this.playerCommandPhase();
                 heroes[this.heroTurn].animateForward();
             }
             if (turn == "player" && this.playerCommandsChosen == true) {
-                gameUi.hideUi(gameUi.uiEnemyTargets);
-                gameUi.hideUi(gameUi.uiPlayerOptions);
                 this.executePlayerTurn();
             } else if (turn == "enemy" && this.enemyCommandsChosen == false){
                 this.enemyCommandPhase();
@@ -473,6 +449,7 @@ var game = {
     },
 
     executePlayerTurn : function() { // Step 3: Execute the player's commands
+
         var heroCount = heroes.length;
 
         for (let i = 0; i < heroCount; i++) {
@@ -483,28 +460,25 @@ var game = {
             setTimeout(function() {
                 switch (heroes[i].command) {
                     case "fight" :
+                    heroes[i].animateForward();
+
                     // Who is attacking - Notification appears immediately, disappears 4 secs later
                     gameUi.notification("pawn", heroes[i].name, 4000);
                     
                     // Who they're attacking - Notification appears a half second later, disappears 3.5 secs later
                     setTimeout(function() {
-                        gameUi.notification("target", heroes[i].target.name, 3750);
-                    }, 250);
+                        gameUi.notification("target", heroes[i].target.name, 3500);
+                    }, 500);
 
                     setTimeout(function() {
-                        heroes[i].animateForward();
-                    }, 900);
+                        heroes[i].animateBack();
+                    }, 1000);
                         
                     heroes[i].fight(heroes[i].target);
                     // How much damage they did - Notification appears 3 secs later, disappears 1 sec later
                     setTimeout(function() {
                         gameUi.notification("damage", heroes[i].attack + "DMG", 2000);
                     }, 2000);
-                    
-                    setTimeout(function() {
-                        heroes[i].animateBack();
-                    }, 2000);
-
                         break;
                     case "magic" : 
                         hero.magic(hero.target);
@@ -538,10 +512,9 @@ var game = {
                 enemies[i].fight(enemies[i].target);
             }
         }
-        gameUi.refreshHeroStats();
         console.log("Enemy took their turn!");
-        game.resetGameLoop();
-        game.loop("active", "player");
+        this.resetGameLoop();
+        this.loop();
     },
     resetGameLoop : function() { // Continue the game and reset the player's commands if the game is still in the active state
         this.turn = "player";
