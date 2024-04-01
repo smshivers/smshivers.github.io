@@ -4,7 +4,9 @@
 
 /* SOUND
 */
-var battleMusic = new Audio("assets/audio/battle_scene.mp3");
+var soundBattleMusic = new Audio("assets/audio/battle_scene.mp3");
+var soundVictoryMusic = new Audio("assets/audio/victory.mp3");
+var soundAttack = new Audio("assets/audio/attack.mp3");
 
 /* PAWN
 The class used for both Heroes and Enemies
@@ -73,6 +75,7 @@ class Hero extends Pawn {
         console.log(this.name, "chose to target", target);
         this.target = target;
         this.animateBack();
+        // This should eventually be a part of the loop
         if (game.heroTurn == heroes.length-1) {
             game.playerCommandsChosen = true;
             game.loop("active", "player");
@@ -173,12 +176,21 @@ class Enemy extends Pawn {
         var randomHeroTarget = heroes[Math.floor(Math.random() * heroes.length)];
         this.target = randomHeroTarget;
     }
+    damageEffect() {
+        var enemySprite = document.getElementById("enemy-sprite-container" + this.id);
+        var enemyDamageEffect = document.createElement("div");
+        enemyDamageEffect.classList.add("enemy-damage-sprite");
+        enemyDamageEffect.setAttribute("id", "enemy-damage-sprite-1");
+        enemySprite.appendChild(enemyDamageEffect);
+    }
     die() {
         console.log(this.name, "died!");
+        this.alive = false;
+        var enemyIndex = enemies.indexOf(this.name);
+        enemies.splice(enemyIndex,1);
+
         setTimeout(function() {
             gameUi.notification("terminated", "Terminated", 1500);
-            var enemyIndex = enemies.indexOf(this.name);
-            enemies.splice(enemyIndex,1);
             gameUi.refreshEnemyList();
         }, 2500);
     }
@@ -194,12 +206,20 @@ class Imp extends Enemy {
 }
 
 var enemyOne = new Imp;
+enemyOne.id = 0;
+
 var enemyTwo = new Imp;
+enemyTwo.id = 1;
+
 var enemyThree = new Imp;
+enemyThree.id = 2;
+
 var enemyFour = new Imp;
+enemyFour.id = 3;
 
 enemies = [];
-enemies.push(enemyOne, enemyTwo, enemyThree, enemyFour);
+enemies.push(enemyOne);
+//enemies.push(enemyOne, enemyTwo, enemyThree, enemyFour);
 // End of ENEMIES
 
 
@@ -329,10 +349,17 @@ var gameUi = {
 
             switch (enemies[i].constructor.name) {
                 case "Imp" :
+                    var enemySpriteContainer = document.createElement("div");
+                    enemySpriteContainer.classList.add("enemy-sprite-container");
+                    enemySpriteContainer.setAttribute("id", "enemy-sprite-container" + i);
+
                     var enemySprite = document.createElement("img");
                     enemySprite.src = "assets/images/imp.svg";
+                    enemySprite.setAttribute("id", "enemy" + i);
                     enemySprite.classList.add("enemy-sprite");
-                    document.getElementById("enemy-display").appendChild(enemySprite);
+
+                    document.getElementById("enemy-display").appendChild(enemySpriteContainer);
+                    document.getElementById("enemy-sprite-container" + i).appendChild(enemySprite);
                     break;
                 default :
                     console.log("hello");
@@ -366,6 +393,7 @@ var gameUi = {
     var playerOptionMagic = document.createElement("button");
     playerOptionMagic.innerText = "MAGIC";
     playerOptionMagic.setAttribute("type", "button");
+    playerOptionMagic.setAttribute("disabled", true);
     playerOptionMagic.classList.add("btn", "btn-dark", "btn-game");
     playerOptionMagic.setAttribute("onclick", "heroes[game.heroTurn].chooseCommand('magic')");
     document.getElementById("player-options").appendChild(playerOptionMagic);
@@ -373,6 +401,7 @@ var gameUi = {
     var playerOptionDrink = document.createElement("button");
     playerOptionDrink.innerText = "DRINK";
     playerOptionDrink.setAttribute("type", "button");
+    playerOptionDrink.setAttribute("disabled", true);
     playerOptionDrink.classList.add("btn", "btn-dark", "btn-game");
     playerOptionDrink.setAttribute("onclick", "heroes[game.heroTurn].chooseCommand('drink')");
     document.getElementById("player-options").appendChild(playerOptionDrink);
@@ -380,6 +409,7 @@ var gameUi = {
     var playerOptionItem = document.createElement("button");
     playerOptionItem.innerText = "ITEM";
     playerOptionItem.setAttribute("type", "button");
+    playerOptionItem.setAttribute("disabled", true);
     playerOptionItem.classList.add("btn", "btn-dark", "btn-game");
     playerOptionItem.setAttribute("onclick", "heroes[game.heroTurn].chooseCommand('item')");
     document.getElementById("player-options").appendChild(playerOptionItem);
@@ -387,6 +417,7 @@ var gameUi = {
     var playerOptionRun = document.createElement("button");
     playerOptionRun.innerText = "RUN";
     playerOptionRun.setAttribute("type", "button");
+    playerOptionRun.setAttribute("disabled", true);
     playerOptionRun.classList.add("btn", "btn-dark", "btn-game");
     playerOptionRun.setAttribute("onclick", "heroes[game.heroTurn].chooseCommand('run')");
     document.getElementById("player-options").appendChild(playerOptionRun);
@@ -423,28 +454,45 @@ var game = {
 
     // THE LOOP: The function controlling the core game functionality
     loop : function(state, turn) {
+        console.log("Hi, I'm the GAME LOOP! The current state of the loop is " + state + " and it's currently the " + turn + "'s turn!");
         if (state == "active") {
+            console.log("State is showing as active");
+
             if (turn == "player" && this.playerCommandsChosen == false) {
+                console.log("turn == player and playerCommandsChosen == false");
                 gameUi.showUi(gameUi.uiEnemyTargets);
                 gameUi.showUi(gameUi.uiPlayerOptions);
                 this.playerCommandPhase();
                 heroes[this.heroTurn].animateForward();
             }
+
             if (turn == "player" && this.playerCommandsChosen == true) {
+                console.log("turn == player and playerCommandsChosen == true");
                 gameUi.hideUi(gameUi.uiEnemyTargets);
                 gameUi.hideUi(gameUi.uiPlayerOptions);
                 this.executePlayerTurn();
+
             } else if (turn == "enemy" && this.enemyCommandsChosen == false){
+                console.log("turn == enemy and enemyCommandsChosen == false");
                 this.enemyCommandPhase();
+
             } else if (turn == "enemy" && this.enemyCommandsChosen == true) {
+                console.log("turn == enemy and enemyCommandsChosen == true");
                 this.executeEnemyTurn();
-            } else {
-                console.log("No Game Loop state available for this scenario.");
+
             }
         }
         
-        else if (state == "inactive") {
+        else if (state == "loss") {
+            console.log("Game Over");
+        }
 
+        else if (state == "victory") {
+            soundVictoryMusic.play();
+        }
+
+        else {
+            console.log("There's no logic for this scenario.")
         }
     },
 
@@ -475,14 +523,24 @@ var game = {
     executePlayerTurn : function() { // Step 3: Execute the player's commands
         var heroCount = heroes.length;
 
-        for (let i = 0; i < heroCount; i++) {
-            executeHeroCommand(i);
-        }
+        for (let i = 0; i < heroes.length; i++) {
 
-        function executeHeroCommand(i) {
             setTimeout(function() {
                 switch (heroes[i].command) {
                     case "fight" :
+                        if (heroes[i].target.alive == true) {
+                            heroes[i].fight(heroes[i].target);
+                            setTimeout(function() {
+                                soundAttack.play();
+                                gameUi.notification("damage", heroes[i].attack + "DMG", 2000);
+                            }, 2000);
+                        } else {
+                            setTimeout(function() {
+                                gameUi.notification("damage", "Missed!", 2000);
+                            }, 2000);
+                        }
+                    
+
                     // Who is attacking - Notification appears immediately, disappears 4 secs later
                     gameUi.notification("pawn", heroes[i].name, 4000);
                     
@@ -494,17 +552,10 @@ var game = {
                     setTimeout(function() {
                         heroes[i].animateForward();
                     }, 900);
-                        
-                    heroes[i].fight(heroes[i].target);
-                    // How much damage they did - Notification appears 3 secs later, disappears 1 sec later
-                    setTimeout(function() {
-                        gameUi.notification("damage", heroes[i].attack + "DMG", 2000);
-                    }, 2000);
                     
                     setTimeout(function() {
                         heroes[i].animateBack();
                     }, 2000);
-
                         break;
                     case "magic" : 
                         hero.magic(hero.target);
@@ -522,29 +573,59 @@ var game = {
                         console.log("Error: No command chosen");
                 }
             }, (6 * 1000) * i);
-        }
 
-        setTimeout(function(i) {
-            game.breakLoopCheck();
-            game.loop("active", "enemy");
-        }, (6 * 1000) * heroCount);
+            setTimeout(function(i) {
+                game.breakLoopCheck();
+            }, (6 * 1000) * heroCount);
+        }
     },
 
     executeEnemyTurn : function() { // Step 4: Execute the enemy's commands
-        for (var i = 0; i < enemies.length; i++) {
-            if (this.state == "won" || this.state == "loss") {
-                return;
-            } else {
-                enemies[i].fight(enemies[i].target);
-            }
+        console.log("executeEnemyTurn()");
+        var enemyCount = enemies.length;
+
+        for (let i = 0; i < enemyCount; i++) {
+            executeEnemyCommand(i);
         }
-        gameUi.refreshHeroStats();
-        console.log("Enemy took their turn!");
-        game.resetGameLoop();
-        game.loop("active", "player");
+
+        function executeEnemyCommand(i) {
+            console.log("executeEnemyCommand()");
+            setTimeout(function() {
+                switch (enemies[i].command) {
+                    case "fight" :
+                    // Who is attacking - Notification appears immediately, disappears 4 secs later
+                    gameUi.notification("pawn", enemies[i].name, 4000);
+                    
+                    // Who they're attacking - Notification appears a half second later, disappears 3.5 secs later
+                    setTimeout(function() {
+                        gameUi.notification("target", enemies[i].target.name, 3750);
+                    }, 250);
+                        
+                    enemies[i].fight(enemies[i].target);
+                    // How much damage they did - Notification appears 3 secs later, disappears 1 sec later
+                    setTimeout(function() {
+                        soundAttack.play();
+                        gameUi.notification("damage", enemies[i].attack + "DMG", 2000);
+                        gameUi.refreshHeroStats(); // Refresh the UI to display the hero's updated HP
+                    }, 2000);
+
+                        break;
+                    case "magic" : 
+                        enemy.magic(enemy.target);
+                        break;
+                    default :
+                        console.log("Error: No command chosen");
+                }
+            }, (6 * 1000) * i);
+        }
+
+        setTimeout(function(i) {
+            console.log("Enemy took their turn!");
+            game.resetGameLoop();
+        }, (6 * 1000) * enemyCount);
     },
+
     resetGameLoop : function() { // Continue the game and reset the player's commands if the game is still in the active state
-        this.turn = "player";
         this.playerCommandsChosen = false;
         this.enemyCommandsChosen = false;
         this.heroTurn = 0;
@@ -557,11 +638,13 @@ var game = {
             enemy.target = '';
         }
     },
+
     breakLoopCheck : function() { // Decide if the game loop needs to be broken for a victory or a loss
         function deadHeroCheck() {
             this.alive;
         }
         if (enemies.length == 0) {
+            soundVictoryMusic.play();
             console.log("You Win!")
             return this.state = "won";
         }
@@ -575,4 +658,4 @@ var game = {
 }
 
 gameUi.instantiateUi();
-game.loop();
+game.loop("active", "player");
