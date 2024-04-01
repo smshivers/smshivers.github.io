@@ -218,8 +218,8 @@ var enemyFour = new Imp;
 enemyFour.id = 3;
 
 enemies = [];
-enemies.push(enemyOne);
-//enemies.push(enemyOne, enemyTwo, enemyThree, enemyFour);
+//enemies.push(enemyOne);
+enemies.push(enemyOne, enemyTwo, enemyThree, enemyFour);
 // End of ENEMIES
 
 
